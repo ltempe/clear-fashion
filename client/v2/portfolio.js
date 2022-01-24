@@ -21,6 +21,7 @@ const setCurrentProducts = ({result, meta}) => {
   currentPagination = meta;
 };
 
+
 /**
  * Fetch products from api
  * @param  {Number}  [page=1] - current page to fetch
@@ -110,14 +111,27 @@ const render = (products, pagination) => {
  * Select the number of products to display
  * @type {[type]}
  */
-selectShow.addEventListener('change', event => {
-  fetchProducts(currentPagination.currentPage, parseInt(event.target.value))
+function refresh()
+{
+  console.log(currentPagination);
+  fetchProducts(currentPagination.currentPage, currentPagination.pageSize)
     .then(setCurrentProducts)
     .then(() => render(currentProducts, currentPagination));
-});
+};
 
 document.addEventListener('DOMContentLoaded', () =>
   fetchProducts()
     .then(setCurrentProducts)
     .then(() => render(currentProducts, currentPagination))
 );
+
+selectShow.addEventListener('change', event => {
+  currentPagination.pageSize = parseInt(event.target.value);
+  refresh();
+});
+
+selectPage.addEventListener('change', event =>
+{
+  currentPagination.currentPage = parseInt(event.target.value);
+  refresh();
+});
