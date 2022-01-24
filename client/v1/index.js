@@ -180,9 +180,14 @@ market_sorted_prices.forEach(article =>
 console.table(products_50_100);
 
 
+<<<<<<< HEAD
 //#########################################################################################
 // 🎯 TODO: Average Basket
 // 1. Determine the average basket of the marketplace
+=======
+// 🎯 TODO: Average price
+// 1. Determine the average price of the marketplace
+>>>>>>> 366a5ecac46cc22874c918455f258da430ba06ca
 // 2. Log the average
 console.log('###############################################################################');
 console.log('🎯 TODO: Average Basket');
