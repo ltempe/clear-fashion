@@ -13,6 +13,7 @@ const selectBrand = document.querySelector("#brand-select");
 const sectionProducts = document.querySelector("#products");
 const spanNbProducts = document.querySelector("#nbProducts");
 const filtReleased = document.querySelector("#recentlyReleased");
+const filtPrice = document.querySelector("#reasonablePrice");
 
 /**
  * Set global value
@@ -56,17 +57,23 @@ const fetchProducts = async (page = 1, size = 12) => {
 const renderProducts = (products) => {
   let toDisplay =
     currentBrand == "all" ? products : byBrands(products)[currentBrand];
-  if (filtReleased.checked)
-    toDisplay = toDisplay.filter((product) => {
-      const one_day = 24 * 60 * 60 * 1000;
-      const diff = (new Date() - new Date(product.released)) / one_day;
-      if (diff < 15) return product;
-    });
 
   const fragment = document.createDocumentFragment();
   const div = document.createElement("div");
   let template;
   try {
+    if (filtReleased.checked)
+      toDisplay = toDisplay.filter((product) => {
+        const one_day = 24 * 60 * 60 * 1000;
+        const diff = (new Date() - new Date(product.released)) / one_day;
+        if (diff < 15) return product;
+      });
+
+    if (filtPrice.checked)
+      toDisplay = toDisplay.filter((product) => {
+        if (product.price <= 50) return product;
+      });
+
     template = `
     <table>
       <thead>
@@ -93,6 +100,7 @@ const renderProducts = (products) => {
     template += "</tbody></table>";
   } catch {
     template = `<p>No ${currentBrand} products in that page.</p>`;
+    currentBrand = "all";
   }
 
   div.innerHTML = template;
@@ -215,4 +223,12 @@ selectBrand.addEventListener("change", (event) => {
   refresh();
 });
 
+/**
+ * Filter by new released
+ */
 filtReleased.addEventListener("change", refresh);
+
+/**
+ * Filter by reasonable price
+ */
+filtPrice.addEventListener("change", refresh);
