@@ -20,6 +20,10 @@ const checkPrice = document.querySelector("#reasonablePrice");
 
 const selectSort = document.querySelector("#sort-select");
 
+const spanP50 = document.querySelector("#p50");
+const spanP90 = document.querySelector("#p90");
+const spanP95 = document.querySelector("#p95");
+
 /**
  * Set global value
  * @param {Array} result - products to display
@@ -111,6 +115,15 @@ const sortBy = (products) => {
   }
 };
 
+const getP = (products, pVal) => {
+  let sortedProducts = products.slice();
+  sortedProducts.sort((p1, p2) =>
+    p1.price < p2.price ? 1 : p1.price === p2.price ? 0 : -1
+  );
+  const n = Math.floor(sortedProducts.length * (pVal / 100));
+  return sortedProducts[n].price;
+};
+
 /**
  * Render list of products
  * @param  {Array} products
@@ -126,11 +139,16 @@ const renderProducts = (products) => {
   let template;
 
   if (toDisplay) {
-    if (checkReleased.checked) toDisplay = filterByReleased(toDisplay);
+    const newProducts = filterByReleased(toDisplay);
+    if (checkReleased.checked) toDisplay = newProducts;
     if (checkPrice.checked) toDisplay = filterByPrice(toDisplay);
     sortBy(toDisplay);
 
-    spanNbNewProducts.innerHTML = filterByReleased(toDisplay).length;
+    spanNbNewProducts.innerHTML = newProducts.length;
+    spanP50.innerHTML = getP(toDisplay, 50) + "€";
+    spanP90.innerHTML = getP(toDisplay, 90) + "€";
+    spanP95.innerHTML = getP(toDisplay, 95) + "€";
+
     template = `
     <table>
       <thead>
