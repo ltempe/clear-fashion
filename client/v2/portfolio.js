@@ -12,6 +12,7 @@ const selectPage = document.querySelector("#page-select");
 const selectBrand = document.querySelector("#brand-select");
 const sectionProducts = document.querySelector("#products");
 const spanNbProducts = document.querySelector("#nbProducts");
+const filtReleased = document.querySelector("#recentlyReleased");
 
 /**
  * Set global value
@@ -53,23 +54,43 @@ const fetchProducts = async (page = 1, size = 12) => {
  * @param  {Array} products
  */
 const renderProducts = (products) => {
-  const toDisplay =
+  let toDisplay =
     currentBrand == "all" ? products : byBrands(products)[currentBrand];
+  if (filtReleased.checked)
+    toDisplay = toDisplay.filter((product) => {
+      const one_day = 24 * 60 * 60 * 1000;
+      const diff = (new Date() - new Date(product.released)) / one_day;
+      if (diff < 15) return product;
+    });
+
   const fragment = document.createDocumentFragment();
   const div = document.createElement("div");
   let template;
   try {
-    template = toDisplay
+    template = `
+    <table>
+      <thead>
+        <tr>
+          <th>Brand</th>
+          <th>Product</th>
+          <th>Price</th>
+          <th>Released</th>
+        </tr>
+    </thead>
+    <tbody>`;
+    template += toDisplay
       .map((product) => {
         return `
-      <div class="product" id=${product.uuid}>
-        <span>${product.brand}</span>
-        <a href="${product.link}">${product.name}</a>
-        <span>${product.price}</span>
-      </div>
+      <tr class="product" id=${product.uuid}>
+        <th>${product.brand}</th>
+        <th><a href="${product.link}">${product.name}</a></th>
+        <th>${product.price}€</th>
+        <th>${product.released}</th>
+      </tr>
     `;
       })
       .join("");
+    template += "</tbody></table>";
   } catch {
     template = `<p>No ${currentBrand} products in that page.</p>`;
   }
@@ -193,3 +214,5 @@ selectBrand.addEventListener("change", (event) => {
   currentBrand = event.target.value;
   refresh();
 });
+
+filtReleased.addEventListener("change", refresh);
