@@ -11,10 +11,12 @@ const selectShow = document.querySelector("#show-select");
 const selectPage = document.querySelector("#page-select");
 const selectBrand = document.querySelector("#brand-select");
 const sectionProducts = document.querySelector("#products");
-const spanNbProducts = document.querySelector("#nbProducts");
 
-const filtReleased = document.querySelector("#recentlyReleased");
-const filtPrice = document.querySelector("#reasonablePrice");
+const spanNbProducts = document.querySelector("#nbProducts");
+const spanNbNewProducts = document.querySelector("#nbNewProducts");
+
+const checkReleased = document.querySelector("#recentlyReleased");
+const checkPrice = document.querySelector("#reasonablePrice");
 
 const selectSort = document.querySelector("#sort-select");
 
@@ -53,17 +55,18 @@ const fetchProducts = async (page = 1, size = 12) => {
   }
 };
 
+const getNewProducts = (products) => {};
+
 /**
  * Filter products by new released or not.
  * @param {Object} products
  */
 const filterByReleased = (products) => {
-  if (filtReleased.checked)
-    products = products.filter((product) => {
-      const one_day = 24 * 60 * 60 * 1000;
-      const diff = (new Date() - new Date(product.released)) / one_day;
-      if (diff < 15) return product;
-    });
+  return products.filter((product) => {
+    const one_day = 24 * 60 * 60 * 1000;
+    const diff = (new Date() - new Date(product.released)) / one_day;
+    if (diff < 15) return product;
+  });
 };
 
 /**
@@ -71,10 +74,9 @@ const filterByReleased = (products) => {
  * @param {Object} products
  */
 const filterByPrice = (products) => {
-  if (filtPrice.checked)
-    products = products.filter((product) => {
-      if (product.price <= 50) return product;
-    });
+  return products.filter((product) => {
+    if (product.price <= 50) return product;
+  });
 };
 
 /**
@@ -120,14 +122,15 @@ const renderProducts = (products) => {
   const fragment = document.createDocumentFragment();
   const div = document.createElement("div");
 
+  spanNbNewProducts.innerHTML = 0;
   let template;
 
   if (toDisplay) {
-    filterByReleased(toDisplay);
-    filterByPrice(toDisplay);
-
+    if (checkReleased.checked) toDisplay = filterByReleased(toDisplay);
+    if (checkPrice.checked) toDisplay = filterByPrice(toDisplay);
     sortBy(toDisplay);
 
+    spanNbNewProducts.innerHTML = filterByReleased(toDisplay).length;
     template = `
     <table>
       <thead>
@@ -280,11 +283,11 @@ selectBrand.addEventListener("change", (event) => {
 /**
  * Filter by new released
  */
-filtReleased.addEventListener("change", refresh);
+checkReleased.addEventListener("change", refresh);
 
 /**
  * Filter by reasonable price
  */
-filtPrice.addEventListener("change", refresh);
+checkPrice.addEventListener("change", refresh);
 
 selectSort.addEventListener("change", refresh);
