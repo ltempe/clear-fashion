@@ -94,6 +94,18 @@ const sortBy = (products) => {
         p1.price < p2.price ? 1 : p1.price === p2.price ? 0 : -1
       );
       break;
+
+    case "date-asc":
+      products.sort((p1, p2) =>
+        p1.released < p2.released ? 1 : p1.released === p2.released ? 0 : -1
+      );
+      break;
+
+    case "date-desc":
+      products.sort((p1, p2) =>
+        p1.released < p2.released ? -1 : p1.released === p2.released ? 0 : 1
+      );
+      break;
   }
 };
 
