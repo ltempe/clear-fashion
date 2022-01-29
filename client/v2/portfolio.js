@@ -12,8 +12,11 @@ const selectPage = document.querySelector("#page-select");
 const selectBrand = document.querySelector("#brand-select");
 const sectionProducts = document.querySelector("#products");
 const spanNbProducts = document.querySelector("#nbProducts");
+
 const filtReleased = document.querySelector("#recentlyReleased");
 const filtPrice = document.querySelector("#reasonablePrice");
+
+const selectSort = document.querySelector("#sort-select");
 
 /**
  * Set global value
@@ -51,6 +54,50 @@ const fetchProducts = async (page = 1, size = 12) => {
 };
 
 /**
+ * Filter products by new released or not.
+ * @param {Object} products
+ */
+const filterByReleased = (products) => {
+  if (filtReleased.checked)
+    products = products.filter((product) => {
+      const one_day = 24 * 60 * 60 * 1000;
+      const diff = (new Date() - new Date(product.released)) / one_day;
+      if (diff < 15) return product;
+    });
+};
+
+/**
+ * Filter products by reasonable price or not.
+ * @param {Object} products
+ */
+const filterByPrice = (products) => {
+  if (filtPrice.checked)
+    products = products.filter((product) => {
+      if (product.price <= 50) return product;
+    });
+};
+
+/**
+ * Sort products by the value of the sortSelect item.
+ * @param {Object} products
+ */
+const sortBy = (products) => {
+  switch (selectSort.value) {
+    case "price-asc":
+      products.sort((p1, p2) =>
+        p1.price < p2.price ? -1 : p1.price === p2.price ? 0 : 1
+      );
+      break;
+
+    case "price-desc":
+      products.sort((p1, p2) =>
+        p1.price < p2.price ? 1 : p1.price === p2.price ? 0 : -1
+      );
+      break;
+  }
+};
+
+/**
  * Render list of products
  * @param  {Array} products
  */
@@ -60,19 +107,14 @@ const renderProducts = (products) => {
 
   const fragment = document.createDocumentFragment();
   const div = document.createElement("div");
-  let template;
-  try {
-    if (filtReleased.checked)
-      toDisplay = toDisplay.filter((product) => {
-        const one_day = 24 * 60 * 60 * 1000;
-        const diff = (new Date() - new Date(product.released)) / one_day;
-        if (diff < 15) return product;
-      });
 
-    if (filtPrice.checked)
-      toDisplay = toDisplay.filter((product) => {
-        if (product.price <= 50) return product;
-      });
+  let template;
+
+  if (toDisplay) {
+    filterByReleased(toDisplay);
+    filterByPrice(toDisplay);
+
+    sortBy(toDisplay);
 
     template = `
     <table>
@@ -98,7 +140,7 @@ const renderProducts = (products) => {
       })
       .join("");
     template += "</tbody></table>";
-  } catch {
+  } else {
     template = `<p>No ${currentBrand} products in that page.</p>`;
     currentBrand = "all";
   }
@@ -232,3 +274,5 @@ filtReleased.addEventListener("change", refresh);
  * Filter by reasonable price
  */
 filtPrice.addEventListener("change", refresh);
+
+selectSort.addEventListener("change", refresh);
