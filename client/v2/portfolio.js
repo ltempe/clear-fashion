@@ -24,6 +24,8 @@ const spanP50 = document.querySelector("#p50");
 const spanP90 = document.querySelector("#p90");
 const spanP95 = document.querySelector("#p95");
 
+const spanLastReleased = document.querySelector("#lastReleased");
+
 /**
  * Set global value
  * @param {Array} result - products to display
@@ -59,11 +61,9 @@ const fetchProducts = async (page = 1, size = 12) => {
   }
 };
 
-const getNewProducts = (products) => {};
-
 /**
- * Filter products by new released or not.
- * @param {Object} products
+ * Filter products by new released.
+ * @param {Array} products
  */
 const filterByReleased = (products) => {
   return products.filter((product) => {
@@ -74,8 +74,8 @@ const filterByReleased = (products) => {
 };
 
 /**
- * Filter products by reasonable price or not.
- * @param {Object} products
+ * Filter products by reasonable price.
+ * @param {Array} products
  */
 const filterByPrice = (products) => {
   return products.filter((product) => {
@@ -85,7 +85,7 @@ const filterByPrice = (products) => {
 
 /**
  * Sort products by the value of the sortSelect item.
- * @param {Object} products
+ * @param {Array} products
  */
 const sortBy = (products) => {
   switch (selectSort.value) {
@@ -115,6 +115,12 @@ const sortBy = (products) => {
   }
 };
 
+/**
+ * Get the pX value price of the displayed products
+ * @param {Array} products
+ * @param {number} pVal
+ * @returns
+ */
 const getP = (products, pVal) => {
   let sortedProducts = products.slice();
   sortedProducts.sort((p1, p2) =>
@@ -122,6 +128,53 @@ const getP = (products, pVal) => {
   );
   const n = Math.floor(sortedProducts.length * (pVal / 100));
   return sortedProducts[n].price;
+};
+
+/**
+ * Create a template of a table for displaying the products
+ * @param {Array} products
+ * @returns
+ */
+const createTemplate = (products) => {
+  let template = `
+  <table>
+    <thead>
+      <tr>
+        <th>Brand</th>
+        <th>Product</th>
+        <th>Price</th>
+        <th>Released</th>
+      </tr>
+  </thead>
+  <tbody>`;
+  template += products
+    .map((product) => {
+      return `
+    <tr class="product" id=${product.uuid}>
+      <th>${product.brand}</th>
+      <th><a href="${product.link}">${product.name}</a></th>
+      <th>${product.price}€</th>
+      <th>${product.released}</th>
+    </tr>
+  `;
+    })
+    .join("");
+  template += "</tbody></table>";
+
+  return template;
+};
+
+/**
+ * Get the date of the last released displayed product
+ * @param {Array} products
+ * @returns Date of the last released displayed product
+ */
+const getLastReleased = (products) => {
+  let sortedProducts = products.slice();
+  sortedProducts.sort((p1, p2) =>
+    p1.released < p2.released ? 1 : p1.released === p2.released ? 0 : -1
+  );
+  return sortedProducts[0].released;
 };
 
 /**
@@ -149,30 +202,8 @@ const renderProducts = (products) => {
     spanP90.innerHTML = getP(toDisplay, 90) + "€";
     spanP95.innerHTML = getP(toDisplay, 95) + "€";
 
-    template = `
-    <table>
-      <thead>
-        <tr>
-          <th>Brand</th>
-          <th>Product</th>
-          <th>Price</th>
-          <th>Released</th>
-        </tr>
-    </thead>
-    <tbody>`;
-    template += toDisplay
-      .map((product) => {
-        return `
-      <tr class="product" id=${product.uuid}>
-        <th>${product.brand}</th>
-        <th><a href="${product.link}">${product.name}</a></th>
-        <th>${product.price}€</th>
-        <th>${product.released}</th>
-      </tr>
-    `;
-      })
-      .join("");
-    template += "</tbody></table>";
+    spanLastReleased.innerHTML = getLastReleased(toDisplay);
+    template = createTemplate(toDisplay);
   } else {
     template = `<p>No ${currentBrand} products in that page.</p>`;
     currentBrand = "all";
