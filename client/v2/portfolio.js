@@ -26,6 +26,8 @@ const spanP95 = document.querySelector("#p95");
 
 const spanLastReleased = document.querySelector("#lastReleased");
 
+const checkFav = document.getElementsByClassName("favProduct");
+
 /**
  * Set global value
  * @param {Array} result - products to display
@@ -144,6 +146,7 @@ const createTemplate = (products) => {
         <th>Product</th>
         <th>Price</th>
         <th>Released</th>
+        <th>Favorite</th>
       </tr>
   </thead>
   <tbody>`;
@@ -155,6 +158,7 @@ const createTemplate = (products) => {
       <th><a href="${product.link}">${product.name}</a></th>
       <th>${product.price}€</th>
       <th>${product.released}</th>
+      <th><input class="favProduct" type="checkbox"></input></th>
     </tr>
   `;
     })
@@ -192,16 +196,24 @@ const renderProducts = (products) => {
   let template;
 
   if (toDisplay) {
+    //if we choose a loom in page 1 that doesn't exist in page 2,
+    //it can create problems, so we check toDisplay isn't empty
+
+    //filtering
     const newProducts = filterByReleased(toDisplay);
     if (checkReleased.checked) toDisplay = newProducts;
     if (checkPrice.checked) toDisplay = filterByPrice(toDisplay);
+
+    //sorting
     sortBy(toDisplay);
 
+    //get the p50,p90,p95 values
     spanNbNewProducts.innerHTML = newProducts.length;
     spanP50.innerHTML = getP(toDisplay, 50) + "€";
     spanP90.innerHTML = getP(toDisplay, 90) + "€";
     spanP95.innerHTML = getP(toDisplay, 95) + "€";
 
+    //Display date of the last released product in the displayed list
     spanLastReleased.innerHTML = getLastReleased(toDisplay);
     template = createTemplate(toDisplay);
   } else {
@@ -213,6 +225,14 @@ const renderProducts = (products) => {
   fragment.appendChild(div);
   sectionProducts.innerHTML = "<h2>Products</h2>";
   sectionProducts.appendChild(fragment);
+
+  [...checkFav].forEach((chk) => {
+    chk.addEventListener("change", (event) => {
+      const id = chk.parentElement.parentElement.id;
+      const p = toDisplay.find((product) => product.uuid === id);
+      p.favorite = chk.checked;
+    });
+  });
 };
 
 /**
