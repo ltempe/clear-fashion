@@ -14,9 +14,11 @@ const sectionProducts = document.querySelector("#products");
 
 const spanNbProducts = document.querySelector("#nbProducts");
 const spanNbNewProducts = document.querySelector("#nbNewProducts");
+const spanNbDispProducts = document.querySelector("#nbDispProducts");
 
 const checkReleased = document.querySelector("#recentlyReleased");
 const checkPrice = document.querySelector("#reasonablePrice");
+const checkFavoriteProducts = document.querySelector("#favoriteProducts");
 
 const selectSort = document.querySelector("#sort-select");
 
@@ -27,6 +29,8 @@ const spanP95 = document.querySelector("#p95");
 const spanLastReleased = document.querySelector("#lastReleased");
 
 const checkFav = document.getElementsByClassName("favProduct");
+
+let favorites = {};
 
 /**
  * Set global value
@@ -182,12 +186,45 @@ const getLastReleased = (products) => {
 };
 
 /**
+ * Create event listeners to checkbox of 'favorite' for products, and check all
+ * favorite products
+ * @param {Object} products
+ */
+const manageFavorite = (products) => {
+  [...checkFav].forEach((chk) => {
+    chk.addEventListener("change", (event) => {
+      const id = chk.parentElement.parentElement.id;
+      const product = products.find((product) => product.uuid === id);
+      product.favorite = chk.checked;
+      if (product.favorite) favorites[id] = product;
+      else delete favorites[id];
+      refresh();
+    });
+  });
+
+  if (products) {
+    products.forEach((product) => {
+      const isFav = favorites[product.uuid];
+      console.log(isFav);
+      if (isFav) {
+        [...checkFav].find(
+          (chk) => chk.parentElement.parentElement.id === product.uuid
+        ).checked = true;
+      }
+    });
+  }
+};
+
+/**
  * Render list of products
  * @param  {Array} products
  */
 const renderProducts = (products) => {
-  let toDisplay =
-    currentBrand == "all" ? products : byBrands(products)[currentBrand];
+  let toDisplay = checkFavoriteProducts.checked
+    ? Object.values(favorites)
+    : products;
+  toDisplay =
+    currentBrand == "all" ? toDisplay : byBrands(toDisplay)[currentBrand];
 
   const fragment = document.createDocumentFragment();
   const div = document.createElement("div");
@@ -195,7 +232,7 @@ const renderProducts = (products) => {
   spanNbNewProducts.innerHTML = 0;
   let template;
 
-  if (toDisplay) {
+  if (toDisplay && toDisplay.length > 0) {
     //if we choose a loom in page 1 that doesn't exist in page 2,
     //it can create problems, so we check toDisplay isn't empty
 
@@ -215,6 +252,7 @@ const renderProducts = (products) => {
 
     //Display date of the last released product in the displayed list
     spanLastReleased.innerHTML = getLastReleased(toDisplay);
+
     template = createTemplate(toDisplay);
   } else {
     template = `<p>No ${currentBrand} products in that page.</p>`;
@@ -226,13 +264,9 @@ const renderProducts = (products) => {
   sectionProducts.innerHTML = "<h2>Products</h2>";
   sectionProducts.appendChild(fragment);
 
-  [...checkFav].forEach((chk) => {
-    chk.addEventListener("change", (event) => {
-      const id = chk.parentElement.parentElement.id;
-      const p = toDisplay.find((product) => product.uuid === id);
-      p.favorite = chk.checked;
-    });
-  });
+  manageFavorite(toDisplay);
+
+  spanNbDispProducts.innerHTML = toDisplay ? toDisplay.length : 0;
 };
 
 /**
@@ -329,6 +363,7 @@ document.addEventListener("DOMContentLoaded", () =>
  * @type {[type]}
  */
 selectShow.addEventListener("change", (event) => {
+  currentPagination.currentPage = 1;
   currentPagination.pageSize = parseInt(event.target.value);
   refresh();
 });
@@ -360,3 +395,5 @@ checkReleased.addEventListener("change", refresh);
 checkPrice.addEventListener("change", refresh);
 
 selectSort.addEventListener("change", refresh);
+
+checkFavoriteProducts.addEventListener("change", refresh);
