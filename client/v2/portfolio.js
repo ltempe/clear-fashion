@@ -205,7 +205,6 @@ const manageFavorite = (products) => {
   if (products) {
     products.forEach((product) => {
       const isFav = favorites[product.uuid];
-      console.log(isFav);
       if (isFav) {
         [...checkFav].find(
           (chk) => chk.parentElement.parentElement.id === product.uuid
