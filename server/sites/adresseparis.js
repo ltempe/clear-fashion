@@ -9,11 +9,12 @@ const { v5: uuidv5 } = require("uuid");
  */
 const parse = (data) => {
   const $ = cheerio.load(data);
-
   return $(".right-block")
     .map((i, element) => {
+      link = $(element).find(".product-name").attr("href");
       return {
-        link: $(element).find(".product-name").attr("href"),
+        _id: uuidv5(link, uuidv5.URL),
+        link,
         brand: "adresse paris",
         price: parseFloat($(element).find(".price").text()),
         name: $(element).find(".product-name").attr("title"),

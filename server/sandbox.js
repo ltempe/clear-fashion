@@ -1,5 +1,6 @@
 /* eslint-disable no-console, no-process-exit */
 //const dedicatedbrand = require("./sites/dedicatedbrand");
+const { v5: uuidv5 } = require("uuid");
 const montlimart = require("./sites/montlimart");
 const adresseparis = require("./sites/adresseparis");
 const dedicatedapi = require("./sites/dedicatedapi");

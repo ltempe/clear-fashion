@@ -17,6 +17,7 @@ module.exports.scrape = async (url) => {
         const link = `https://www.dedicatedbrand.com/en/${element["canonicalUri"]}`;
         if (element["name"])
           final.push({
+            _id: uuidv5(link, uuidv5.URL),
             link,
             brand: "dedicated",
             name: element["name"],

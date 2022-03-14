@@ -15,6 +15,7 @@ const parse = (data) => {
       .map((i, element) => {
         const link = $(element).find(".product-name a").attr("href");
         return {
+          _id: uuidv5(link, uuidv5.URL),
           link,
           brand: "montlimart",
           price: parseFloat($(element).find(".price").text()),

@@ -41,7 +41,7 @@ const close = (module.exports.close = async () => {
   console.log("Connection closed");
 });
 
-const find = (module.exports.find = async (query) => {
+const find = (module.exports.find = async (query = {}) => {
   try {
     await connect();
     const result = await collectionProducts.find(query).toArray();
