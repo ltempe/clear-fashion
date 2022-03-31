@@ -2,6 +2,11 @@ const fetch = require("node-fetch");
 const cheerio = require("cheerio");
 const { v5: uuidv5 } = require("uuid");
 
+const randomDate = (start = new Date(2021, 0, 1), end = new Date()) =>
+  new Date(start.getTime() + Math.random() * (end.getTime() - start.getTime()))
+    .toISOString()
+    .split("T")[0];
+
 /**
  * Parse webpage restaurant
  * @param  {String} data - html response
@@ -24,7 +29,7 @@ const parse = (data) => {
             .attr("title")
             .replace(/\s/g, " "),
           photo: $(element).parent().find("img").attr("src"),
-          _id: uuidv5(link, uuidv5.URL),
+          released: randomDate(),
         };
       })
       .get(),

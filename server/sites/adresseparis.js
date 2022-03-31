@@ -2,6 +2,11 @@ const fetch = require("node-fetch");
 const cheerio = require("cheerio");
 const { v5: uuidv5 } = require("uuid");
 
+const randomDate = (start = new Date(2021, 0, 1), end = new Date()) =>
+  new Date(start.getTime() + Math.random() * (end.getTime() - start.getTime()))
+    .toISOString()
+    .split("T")[0];
+
 /**
  * Parse webpage restaurant
  * @param  {String} data - html response
@@ -18,7 +23,12 @@ const parse = (data) => {
         brand: "adresse paris",
         price: parseFloat($(element).find(".price").text()),
         name: $(element).find(".product-name").attr("title"),
-        photo: $(element).parent().find(".product_img_link").attr("href"),
+        photo: $(element)
+          .parent()
+          .find(".product_img_link")
+          .find("img")
+          .attr("data-original"),
+        released: randomDate(),
       };
     })
     .get();
@@ -29,7 +39,7 @@ const parse = (data) => {
  * @param  {[type]}  url
  * @return {Array|null}
  */
-module.exports.scrape = async (url) => {
+const scrape = (module.exports.scrape = async (url) => {
   try {
     const response = await fetch(url);
     if (response.ok) {
@@ -44,4 +54,6 @@ module.exports.scrape = async (url) => {
     console.error(error);
     return null;
   }
-};
+});
+
+scrape("https://adresse.paris/630-toute-la-collection?id_category=630&n=118");

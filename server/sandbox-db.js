@@ -1,3 +1,5 @@
+//Not used in the project
+
 /* eslint-disable no-console, no-process-exit */
 const dedicatedbrand = require("./sites/dedicatedbrand");
 const loom = require("./sites/loom");

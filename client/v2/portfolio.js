@@ -7,11 +7,12 @@ let currentPagination = {};
 let currentBrand = "all";
 
 // inititiqte selectors
-const selectShow = document.querySelector("#show-select");
+const inputShow = document.querySelector("#show-input");
 const selectPage = document.querySelector("#page-select");
 const selectBrand = document.querySelector("#brand-select");
 const sectionProducts = document.querySelector("#products");
 
+const spanShow = document.querySelector("#spanShow");
 const spanNbProducts = document.querySelector("#nbProducts");
 const spanNbNewProducts = document.querySelector("#nbNewProducts");
 const spanNbDispProducts = document.querySelector("#nbDispProducts");
@@ -27,10 +28,14 @@ const spanP90 = document.querySelector("#p90");
 const spanP95 = document.querySelector("#p95");
 
 const spanLastReleased = document.querySelector("#lastReleased");
-
 const checkFav = document.getElementsByClassName("favProduct");
 
-let favorites = {};
+const serverLink = "https://server-omega-olive.vercel.app/";
+const searchLink = serverLink + "products/:search?";
+
+const favorites = localStorage.favorites
+  ? new Set(JSON.parse(localStorage.favorites))
+  : new Set();
 
 /**
  * Set global value
@@ -42,17 +47,9 @@ const setCurrentProducts = ({ result, meta }) => {
   currentPagination = meta;
 };
 
-/**
- * Fetch products from api
- * @param  {Number}  [page=1] - current page to fetch
- * @param  {Number}  [size=12] - size of the page
- * @return {Object}
- */
-const fetchProducts = async (page = 1, size = 12) => {
+const fetchProducts = async (link) => {
   try {
-    const response = await fetch(
-      `https://clear-fashion-api.vercel.app?page=${page}&size=${size}`
-    );
+    const response = await fetch(link);
     const body = await response.json();
 
     if (body.success !== true) {
@@ -64,60 +61,6 @@ const fetchProducts = async (page = 1, size = 12) => {
   } catch (error) {
     console.error(error);
     return { currentProducts, currentPagination };
-  }
-};
-
-/**
- * Filter products by new released.
- * @param {Array} products
- */
-const filterByReleased = (products) => {
-  return products.filter((product) => {
-    const one_day = 24 * 60 * 60 * 1000;
-    const diff = (new Date() - new Date(product.released)) / one_day;
-    if (diff < 15) return product;
-  });
-};
-
-/**
- * Filter products by reasonable price.
- * @param {Array} products
- */
-const filterByPrice = (products) => {
-  return products.filter((product) => {
-    if (product.price <= 50) return product;
-  });
-};
-
-/**
- * Sort products by the value of the sortSelect item.
- * @param {Array} products
- */
-const sortBy = (products) => {
-  switch (selectSort.value) {
-    case "price-asc":
-      products.sort((p1, p2) =>
-        p1.price < p2.price ? -1 : p1.price === p2.price ? 0 : 1
-      );
-      break;
-
-    case "price-desc":
-      products.sort((p1, p2) =>
-        p1.price < p2.price ? 1 : p1.price === p2.price ? 0 : -1
-      );
-      break;
-
-    case "date-asc":
-      products.sort((p1, p2) =>
-        p1.released < p2.released ? 1 : p1.released === p2.released ? 0 : -1
-      );
-      break;
-
-    case "date-desc":
-      products.sort((p1, p2) =>
-        p1.released < p2.released ? -1 : p1.released === p2.released ? 0 : 1
-      );
-      break;
   }
 };
 
@@ -143,46 +86,39 @@ const getP = (products, pVal) => {
  */
 const createTemplate = (products) => {
   let template = `
-  <table>
-    <thead>
-      <tr>
-        <th>Brand</th>
-        <th>Product</th>
-        <th>Price</th>
-        <th>Released</th>
-        <th>Favorite</th>
-      </tr>
-  </thead>
-  <tbody>`;
+    <table>
+      <thead>
+        <tr>
+          <th>Brand</th>
+          <th>Product</th>
+          <th>Image</th>
+          <th>Price</th>
+          <th>Released</th>
+          <th>Favorite</th>
+        </tr>
+    </thead>
+    <tbody>`;
   template += products
     .map((product) => {
       return `
-    <tr class="product" id=${product.uuid}>
-      <th>${product.brand}</th>
-      <th><a href="${product.link}">${product.name}</a></th>
-      <th>${product.price}€</th>
-      <th>${product.released}</th>
-      <th><input class="favProduct" type="checkbox"></input></th>
-    </tr>
-  `;
+      <tr class="product" id=${product._id}>
+        <th>${product.brand}</th>
+        <th><a href="${product.link}">${product.name}</a></th>
+        <th style="max-height: 150px; max-width: 150px;">
+            <img height="100%" width="100%" src="${
+              product.photo ? product.photo : "#"
+            }">
+        </th>
+        <th>${product.price}€</th>
+        <th>${product.released}</th>
+        <th><input class="favProduct" type="checkbox"></input></th>
+      </tr>
+    `;
     })
     .join("");
   template += "</tbody></table>";
 
   return template;
-};
-
-/**
- * Get the date of the last released displayed product
- * @param {Array} products
- * @returns Date of the last released displayed product
- */
-const getLastReleased = (products) => {
-  let sortedProducts = products.slice();
-  sortedProducts.sort((p1, p2) =>
-    p1.released < p2.released ? 1 : p1.released === p2.released ? 0 : -1
-  );
-  return sortedProducts[0].released;
 };
 
 /**
@@ -194,78 +130,55 @@ const manageFavorite = (products) => {
   [...checkFav].forEach((chk) => {
     chk.addEventListener("change", (event) => {
       const id = chk.parentElement.parentElement.id;
-      const product = products.find((product) => product.uuid === id);
-      product.favorite = chk.checked;
-      if (product.favorite) favorites[id] = product;
-      else delete favorites[id];
-      refresh();
+      const product = products.find((product) => product._id === id);
+      product["favorite"] = chk.checked;
+      if (product["favorite"]) favorites.add(id);
+      else favorites.delete(id);
+      refresh(parseInt(selectPage.value));
     });
   });
 
   if (products) {
     products.forEach((product) => {
-      const isFav = favorites[product.uuid];
-      if (isFav) {
+      if (favorites.has(product._id))
         [...checkFav].find(
-          (chk) => chk.parentElement.parentElement.id === product.uuid
+          (chk) => chk.parentElement.parentElement.id === product._id
         ).checked = true;
-      }
     });
   }
+
+  localStorage.favorites = JSON.stringify([...favorites]);
 };
 
-/**
- * Render list of products
- * @param  {Array} products
- */
 const renderProducts = (products) => {
-  let toDisplay = checkFavoriteProducts.checked
-    ? Object.values(favorites)
-    : products;
-  toDisplay =
-    currentBrand == "all" ? toDisplay : byBrands(toDisplay)[currentBrand];
-
   const fragment = document.createDocumentFragment();
   const div = document.createElement("div");
 
-  spanNbNewProducts.innerHTML = 0;
   let template;
 
-  if (toDisplay && toDisplay.length > 0) {
-    //if we choose a loom in page 1 that doesn't exist in page 2,
-    //it can create problems, so we check toDisplay isn't empty
-
-    //filtering
-    const newProducts = filterByReleased(toDisplay);
-    if (checkReleased.checked) toDisplay = newProducts;
-    if (checkPrice.checked) toDisplay = filterByPrice(toDisplay);
-
-    //sorting
-    sortBy(toDisplay);
-
-    //get the p50,p90,p95 values
-    spanNbNewProducts.innerHTML = newProducts.length;
-    spanP50.innerHTML = getP(toDisplay, 50) + "€";
-    spanP90.innerHTML = getP(toDisplay, 90) + "€";
-    spanP95.innerHTML = getP(toDisplay, 95) + "€";
-
-    //Display date of the last released product in the displayed list
-    spanLastReleased.innerHTML = getLastReleased(toDisplay);
-
-    template = createTemplate(toDisplay);
-  } else {
-    template = `<p>No ${currentBrand} products in that page.</p>`;
-    currentBrand = "all";
-  }
+  if (products && products.length > 0) {
+    spanP50.innerHTML = getP(products, 50) + "€";
+    spanP90.innerHTML = getP(products, 90) + "€";
+    spanP95.innerHTML = getP(products, 95) + "€";
+    template = createTemplate(products);
+  } else template = `<p>No products to display...</p>`;
 
   div.innerHTML = template;
   fragment.appendChild(div);
   sectionProducts.innerHTML = "<h2>Products</h2>";
   sectionProducts.appendChild(fragment);
 
-  manageFavorite(toDisplay);
+  manageFavorite(products);
+  spanNbDispProducts.innerHTML = products ? products.length : 0;
+};
 
-  spanNbDispProducts.innerHTML = toDisplay ? toDisplay.length : 0;
+const renderBrand = (brands) => {
+  let options = '<option value = "all">All brands</option>\n';
+  brands.forEach(
+    (brand) => (options += `<option value = "${brand}">${brand}</option>\n`)
+  );
+
+  selectBrand.innerHTML = options;
 };
 
 /**
@@ -284,115 +197,107 @@ const renderPagination = (pagination) => {
 };
 
 /**
- * Render brand selector
- * @param {Object} brand
- */
-const renderBrand = (brands) => {
-  let options = '<option value = "all">All brands</option>\n';
-  Object.keys(brands).forEach((brand) => {
-    options += `<option value = "${brand}">${brand}</option>\n`;
-  });
-
-  selectBrand.innerHTML = options;
-  if (currentBrand == "all") selectBrand.selectedIndex = 0;
-  else
-    selectBrand.selectedIndex = Object.keys(brands).indexOf(currentBrand) + 1;
-};
-
-/**
  * Render page selector
  * @param  {Object} pagination
  */
 const renderIndicators = (pagination) => {
   const { count } = pagination;
   spanNbProducts.innerHTML = count;
+
+  inputShow.max = count;
+  spanShow.innerHTML = inputShow.value;
 };
 
-const render = (products, pagination) => {
+const render = async (products, pagination) => {
   renderProducts(products);
   renderPagination(pagination);
   renderIndicators(pagination);
-  renderBrand(byBrands(products));
 };
 
-/**
- * Get the products by brand
- * @param {Object} products
- * @returns Object
- */
-const byBrands = (products) => {
-  let brands = {};
-  if (!products) return {};
-  products.forEach((article) => {
-    if (!brands[article.brand]) {
-      brands[article.brand] = [];
-    }
+const refresh = (nbPage = 1) => {
+  const queries = ["page=" + nbPage];
+  queries.push("size=" + parseInt(inputShow.value));
 
-    let props = {};
-    Object.keys(article)
-      .slice(1)
-      .forEach((prop) => (props[prop] = article[prop]));
+  if (checkPrice.checked) queries.push("price=$lte:50");
 
-    brands[article.brand].push(props);
-  });
-  return brands;
-};
+  if (checkFavoriteProducts.checked)
+    queries.push("_id=$in:" + Array.from(favorites).join(","));
 
-/**
- * Declaration of all Listeners
- */
+  if (selectBrand.selectedIndex != 0)
+    queries.push("brand=" + selectBrand.value);
 
-/**
- * Refresh after a new selection
- */
-const refresh = () => {
-  fetchProducts(currentPagination.currentPage, currentPagination.pageSize)
+  switch (selectSort.value) {
+    case "price-asc":
+      queries.push("sort=price:1");
+      break;
+
+    case "price-desc":
+      queries.push("sort=price:-1");
+      break;
+
+    case "date-asc":
+      queries.push("sort=released:-1");
+      break;
+
+    case "date-desc":
+      queries.push("sort=released:1");
+      break;
+  }
+
+  const daysAgo = new Date().getDate() - 15;
+  const d = new Date(new Date().setDate(daysAgo));
+  const d_15 = d.toLocaleDateString().split("/").reverse().join("-");
+  if (checkReleased.checked) {
+    queries.push("released=$gte:" + d_15);
+  }
+
+  const link = (searchLink + queries.join("&")).replace(" ", "%20");
+  const linkInfo =
+    link + (checkReleased.checked ? "" : "&released=$gte:" + d_15) + "&info=1";
+  fetch(linkInfo)
+    .then((res) => res.json())
+    .then((infos) => {
+      spanLastReleased.innerHTML = infos["lastReleased"];
+      spanNbNewProducts.innerHTML = infos["nbNew"];
+    });
+  fetchProducts(link)
     .then(setCurrentProducts)
     .then(() => render(currentProducts, currentPagination));
 };
 
-document.addEventListener("DOMContentLoaded", () =>
-  fetchProducts()
+document.addEventListener("DOMContentLoaded", async () => {
+  const daysAgo = new Date().getDate() - 15;
+  const d = new Date(new Date().setDate(daysAgo));
+  const d_15 = d.toLocaleDateString().split("/").reverse().join("-");
+  const linkInfo =
+    searchLink.replace(" ", "%20") + "released=$gte:" + d_15 + "&info=1";
+  fetch(linkInfo)
+    .then((res) => res.json())
+    .then((infos) => {
+      spanLastReleased.innerHTML = infos["lastReleased"];
+      spanNbNewProducts.innerHTML = infos["nbNew"];
+    });
+
+  await fetchProducts(searchLink)
     .then(setCurrentProducts)
-    .then(() => render(currentProducts, currentPagination))
+    .then(() => render(currentProducts, currentPagination));
+  const response = await fetch(serverLink + "brands");
+  const brands = await response.json();
+  await renderBrand(brands);
+});
+
+selectPage.addEventListener("change", (event) =>
+  refresh(parseInt(event.target.value))
 );
 
-/**
- * Select the number of products to display
- * @type {[type]}
- */
-selectShow.addEventListener("change", (event) => {
-  currentPagination.currentPage = 1;
-  currentPagination.pageSize = parseInt(event.target.value);
-  refresh();
-});
+inputShow.addEventListener("change", () => refresh());
 
-/**
- * Select page to display
- */
-selectPage.addEventListener("change", (event) => {
-  currentPagination.currentPage = parseInt(event.target.value);
-  refresh();
-});
+selectBrand.addEventListener("change", () => refresh());
 
-/**
- * Select brand to display products
- */
-selectBrand.addEventListener("change", (event) => {
-  currentBrand = event.target.value;
-  refresh();
-});
+checkReleased.addEventListener("change", () => refresh());
 
-/**
- * Filter by new released
- */
-checkReleased.addEventListener("change", refresh);
+checkPrice.addEventListener("change", () => refresh());
 
-/**
- * Filter by reasonable price
- */
-checkPrice.addEventListener("change", refresh);
+selectSort.addEventListener("change", () => refresh());
 
-selectSort.addEventListener("change", refresh);
-
-checkFavoriteProducts.addEventListener("change", refresh);
+checkFavoriteProducts.addEventListener("change", () => refresh());

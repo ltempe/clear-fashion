@@ -1,9 +1,10 @@
+const { closest } = require("cheerio/lib/api/traversing");
 const fs = require("fs");
 let products = [];
 
 const { MongoClient } = require("mongodb");
 const MONGODB_URI =
-  "mongodb+srv://ltempe:ltempe@clearfashion.4nii2.mongodb.net?retryWrites=true&w=majority";
+  "mongodb+srv://read_user:read_user@clearfashion.4nii2.mongodb.net?retryWrites=true&w=majority";
 const MONGODB_DB_NAME = "clearfashion";
 let client;
 let db;
@@ -12,7 +13,7 @@ let collectionProducts;
 const connect = (module.exports.connect = async () => {
   if (db) console.log("Already connected");
   else {
-    const client = await MongoClient.connect(MONGODB_URI, {
+    client = await MongoClient.connect(MONGODB_URI, {
       useNewUrlParser: true,
     });
     db = await client.db(MONGODB_DB_NAME);
@@ -23,8 +24,9 @@ const connect = (module.exports.connect = async () => {
 
 const insert = (module.exports.insert = async (products) => {
   try {
+    //shuffle
+    products.sort(() => 0.5 - Math.random());
     await connect();
-    await collectionProducts.deleteMany();
     const results = await collectionProducts.insertMany(products, {
       ordered: false,
     });
@@ -41,24 +43,45 @@ const close = (module.exports.close = async () => {
   console.log("Connection closed");
 });
 
-const find = (module.exports.find = async (query = {}) => {
+const find = (module.exports.find = async (
+  query = {},
+  projection = {},
+  sort = {},
+  limit = 0
+) => {
   try {
     await connect();
-    const result = await collectionProducts.find(query).toArray();
-    console.log(result.length);
+    const result = await collectionProducts
+      .find(query)
+      .project(projection)
+      .sort(sort)
+      .limit(limit)
+      .toArray();
     return result;
   } catch (error) {
     console.log(error);
   }
 });
 
-//console.log(require("../products/dedicated.json") + );
-for (const file of fs.readdirSync("./products"))
-  products = products.concat(require("../products/" + file));
+const findDistinct = (module.exports.findDistinct = async (col) => {
+  try {
+    await connect();
+    const result = await collectionProducts.distinct(col);
+    // await close();
+    return result;
+  } catch (error) {
+    console.log(error);
+  }
+});
+
+const deleteProducts = () =>
+  connect()
+    .then(() => collectionProducts.deleteMany())
+    .then(close);
 
 const test = async () => {
-  await insert(products);
-  await find({ brand: "montlimart" });
+  const p = await findDistinct("brand");
+  await console.log(p);
+  await close();
 };
-
-test();
+//deleteProducts();

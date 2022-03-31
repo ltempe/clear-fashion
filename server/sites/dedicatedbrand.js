@@ -1,3 +1,5 @@
+//Not used in the project
+
 const fetch = require("node-fetch");
 const cheerio = require("cheerio");
 const { v5: uuidv5 } = require("uuid");
